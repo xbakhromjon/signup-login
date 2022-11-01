@@ -13,7 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import uz.bakhromjon.auth.AuthEntryPointJwt;
+import uz.bakhromjon.auth.AuthenticationEntryPointImpl;
 import uz.bakhromjon.auth.AuthTokenFilter;
 import uz.bakhromjon.collection.user.UserDetailsServiceImpl;
 
@@ -33,7 +33,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
+    private AuthenticationEntryPointImpl unauthorizedHandler;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
