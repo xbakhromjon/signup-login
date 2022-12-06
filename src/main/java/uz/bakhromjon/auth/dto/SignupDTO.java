@@ -5,15 +5,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 /**
  * @author : Bakhromjon Khasanboyev
- * @since : 31/10/22, Mon, 21:57
+ * @since : 31/10/22, Mon, 21:58
  **/
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequest {
+public class SignupDTO {
     private String username;
     private String password;
+    private String email;
+    private Set<String> role;
 }

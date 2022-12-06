@@ -12,6 +12,4 @@ public class UniversalException extends RuntimeException {
         this.message = message;
         this.status = status;
     }
-
-
 }

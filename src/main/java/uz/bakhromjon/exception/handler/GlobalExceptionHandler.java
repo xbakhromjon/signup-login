@@ -14,7 +14,6 @@ import javax.validation.ConstraintViolationException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
     @ExceptionHandler(UniversalException.class)
     public ResponseEntity<?> UniversalExceptionHandler(UniversalException exception, WebRequest webRequest) {
         return new ResponseEntity<>(exception.getMessage(), exception.getStatus());
@@ -33,3 +32,4 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 
 }
+

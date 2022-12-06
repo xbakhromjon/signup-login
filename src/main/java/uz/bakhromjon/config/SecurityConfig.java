@@ -27,8 +27,8 @@ import uz.bakhromjon.collection.user.UserDetailsServiceImpl;
         // securedEnabled = true,
         // jsr250Enabled = true,
         prePostEnabled = true)
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    private final String[] WHITE_LIST = {"/api/auth/signin", "/api/auth/signout", "/api/test/all"};
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    private final String[] WHITE_LIST = {"/api/auth/signin", "/api/auth/signout", "/api/auth/signup", "/api/test/all"};
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
