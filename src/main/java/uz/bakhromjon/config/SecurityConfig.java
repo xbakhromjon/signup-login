@@ -13,7 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import uz.bakhromjon.auth.AuthEntryPointJwt;
+import uz.bakhromjon.auth.AuthenticationEntryPointImpl;
 import uz.bakhromjon.auth.AuthTokenFilter;
 import uz.bakhromjon.collection.user.UserDetailsServiceImpl;
 
@@ -27,13 +27,13 @@ import uz.bakhromjon.collection.user.UserDetailsServiceImpl;
         // securedEnabled = true,
         // jsr250Enabled = true,
         prePostEnabled = true)
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    private final String[] WHITE_LIST = {"/api/auth/signin", "/api/auth/signout", "/api/test/all"};
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    private final String[] WHITE_LIST = {"/api/auth/signin", "/api/auth/signout", "/api/auth/signup", "/api/test/all"};
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
+    private AuthenticationEntryPointImpl unauthorizedHandler;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
