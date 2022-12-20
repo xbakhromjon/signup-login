@@ -1,12 +1,9 @@
 package uz.bakhromjon.collection.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
 
 /**
  * @author : Bakhromjon Khasanboyev
@@ -18,12 +15,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     UserRepository userRepository;
 
     @Override
-    @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+    public UserDetailsImpl loadUserByUsername(String phone) throws UsernameNotFoundException {
+        User user = userRepository.findByPhoneAndNotIsDeleted(phone)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with phone: " + phone));
         return UserDetailsImpl.build(user);
     }
+
+
 }
 
 

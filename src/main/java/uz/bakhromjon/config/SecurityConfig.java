@@ -32,7 +32,11 @@ import uz.bakhromjon.collection.user.UserDetailsServiceImpl;
         // jsr250Enabled = true,
         prePostEnabled = true)
 public class SecurityConfig {
-    private final String[] WHITE_LIST = {"/api/auth/signin", "/api/auth/signout", "/api/auth/signup", "/swagger-ui/**", "/v3/api-docs/**"};
+    private final String[] WHITE_LIST = {"/api/auth/signin",
+            "/api/auth/signout",
+            "/api/auth/distributor",
+            "/api/auth/checkOTP",
+            "/api/auth/signup", "/swagger-ui/**", "/v3/api-docs/**"};
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
@@ -54,6 +58,7 @@ public class SecurityConfig {
 
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(authenticationProvider());
+        http.authenticationProvider(authenticationProvider());
         return http.build();
     }
 
@@ -66,10 +71,8 @@ public class SecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-
         return authProvider;
     }
 

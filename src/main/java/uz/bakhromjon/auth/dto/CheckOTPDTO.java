@@ -5,17 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Set;
+import java.time.LocalDateTime;
 
-/**
- * @author : Bakhromjon Khasanboyev
- * @since : 31/10/22, Mon, 21:58
- **/
-@Setter
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class SignupDTO {
+public class CheckOTPDTO {
     private String phone;
-    private String name;
+
+    private Integer otp;
 }

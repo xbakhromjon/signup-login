@@ -1,10 +1,13 @@
 package uz.bakhromjon.collection.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.NonNull;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -14,38 +17,34 @@ import java.util.stream.Collectors;
  * @author : Bakhromjon Khasanboyev
  * @since : 31/10/22, Mon, 21:46
  **/
-public class UserDetailsImpl implements UserDetails {
+public class UserDetailsImpl implements UserDetails, Authentication {
     private static final long serialVersionUID = 1L;
 
     private Long id;
 
-    private String username;
+    private String phone;
 
-    private String email;
+    private String name;
 
-    @JsonIgnore
     private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Long id, String username, String email, String password,
+    public UserDetailsImpl(Long id, String phone, String password,
                            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
-        this.username = username;
-        this.email = email;
+        this.phone = phone;
+
         this.password = password;
         this.authorities = authorities;
     }
 
     public static UserDetailsImpl build(User user) {
-        List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
-                .collect(Collectors.toList());
+        List<GrantedAuthority> authorities = null;
 
         return new UserDetailsImpl(
                 user.getId(),
-                user.getUsername(),
-                user.getEmail(),
+                user.getPhone(),
                 user.getPassword(),
                 authorities);
     }
@@ -55,13 +54,35 @@ public class UserDetailsImpl implements UserDetails {
         return authorities;
     }
 
+    @Override
+    public Object getCredentials() {
+        return password;
+    }
+
+    @Override
+    public Object getDetails() {
+        return null;
+    }
+
+    @Override
+    public Object getPrincipal() {
+        return phone;
+    }
+
+    @Override
+    public boolean isAuthenticated() {
+        return false;
+    }
+
+    @Override
+    public void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException {
+
+    }
+
     public Long getId() {
         return id;
     }
 
-    public String getEmail() {
-        return email;
-    }
 
     @Override
     public String getPassword() {
@@ -70,7 +91,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return phone;
     }
 
     @Override
@@ -101,5 +122,10 @@ public class UserDetailsImpl implements UserDetails {
             return false;
         UserDetailsImpl user = (UserDetailsImpl) o;
         return Objects.equals(id, user.id);
+    }
+
+    @Override
+    public String getName() {
+        return null;
     }
 }

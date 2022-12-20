@@ -3,14 +3,19 @@ package uz.bakhromjon.collection.user;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import uz.bakhromjon.collection.role.ERole;
 import uz.bakhromjon.collection.role.Role;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author : Bakhromjon Khasanboyev
@@ -22,8 +27,7 @@ import java.util.Set;
 @Entity
 @Table(name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "username"),
-                @UniqueConstraint(columnNames = "email")
+                @UniqueConstraint(columnNames = "phone"),
         })
 public class User {
     @Id
@@ -32,28 +36,27 @@ public class User {
 
     @NotBlank
     @Size(max = 20)
-    private String username;
+    private String phone;
 
-    @NotBlank
-    @Size(max = 50)
-    @Email(message = "email not valid")
-    private String email;
-    @NotBlank
+    private String name;
+
+
     @Size(max = 120)
     private String password;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+    private String fakePassword = new BCryptPasswordEncoder().encode(UUID.randomUUID().toString());
+
+
+    @Enumerated(EnumType.STRING)
+    private ERole role;
+
+    private Boolean isDeleted = false;
 
     public User() {
     }
 
-    public User(String username, String email, String password) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
+    public User(String phone, String name) {
+        this.phone = phone;
+        this.name = name;
     }
 }

@@ -2,30 +2,26 @@ package uz.bakhromjon.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import uz.bakhromjon.auth.dto.CheckOTPDTO;
 import uz.bakhromjon.auth.dto.LoginDTO;
 import uz.bakhromjon.auth.dto.SignupDTO;
+import uz.bakhromjon.collection.message.MessageSender;
+import uz.bakhromjon.collection.otp.OTPService;
 import uz.bakhromjon.collection.role.ERole;
-import uz.bakhromjon.collection.role.Role;
 import uz.bakhromjon.collection.role.RoleRepository;
-import uz.bakhromjon.collection.user.User;
-import uz.bakhromjon.collection.user.UserDetailsImpl;
-import uz.bakhromjon.collection.user.UserInfoResponse;
-import uz.bakhromjon.collection.user.UserRepository;
+import uz.bakhromjon.collection.user.*;
+import uz.bakhromjon.enums.EAuthResponse;
+import uz.bakhromjon.exception.exception.UniversalException;
 import uz.bakhromjon.response.MessageResponse;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * @author : Bakhromjon Khasanboyev
@@ -35,7 +31,6 @@ import java.util.stream.Collectors;
 public class AuthService {
     @Autowired
     AuthenticationManager authenticationManager;
-
     @Autowired
     UserRepository userRepository;
 
@@ -44,69 +39,90 @@ public class AuthService {
 
     @Autowired
     PasswordEncoder encoder;
+
     @Autowired
     JwtUtils jwtUtils;
 
+
+    @Autowired
+    UserDetailsServiceImpl userDetailsService;
+
+
+    @Autowired
+    private OTPService otpService;
+
+    @Autowired
+    private MessageSender messageSender;
+
     public ResponseEntity<?> authenticateUser(LoginDTO loginRequest) {
-        Authentication authentication = authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UserDetailsImpl userDetails = null;
+        Optional<User> userOptional = userRepository.findByPhoneAndNotIsDeleted(loginRequest.getPhone());
+        if (userOptional.isEmpty()) {
+            throw new UniversalException("Bad credentials", HttpStatus.BAD_REQUEST);
+        }
+        User user = userOptional.get();
+        if (Objects.nonNull(loginRequest.getPassword())) {
+            if (!encoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                throw new UniversalException("Bad credentials", HttpStatus.BAD_REQUEST);
+            }
+        } else {
+            CheckOTPDTO checkOTPDTO = new CheckOTPDTO(loginRequest.getPhone(), loginRequest.getOTP());
+            checkOTP(checkOTPDTO);
+        }
+        userDetails = UserDetailsImpl.build(user);
+        SecurityContextHolder.getContext().setAuthentication(userDetails);
+
         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                 .body(new UserInfoResponse(userDetails.getId(),
                         userDetails.getUsername(),
-                        userDetails.getEmail(),
-                        roles));
+                        null));
     }
 
-    public ResponseEntity<?> registerUser(SignupDTO signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+    public ResponseEntity<?> registerUser(SignupDTO signupDTO) {
+        Boolean existsUser = userRepository.existsByPhoneAndNotIsDeleted(signupDTO.getPhone());
+        if (existsUser != null && existsUser) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Phone is already taken!"));
         }
-
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
-        }
-
-        // Create new user's account
-        User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(), encoder.encode(signUpRequest.getPassword()));
-
-        Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
-
-        if (strRoles == null) {
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(userRole);
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(adminRole);
-
-                        break;
-                    case "mod":
-                        Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(modRole);
-
-                        break;
-                    default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(userRole);
-                }
-            });
-        }
-        user.setRoles(roles);
+        User user = new User(signupDTO.getPhone(), signupDTO.getName());
+        user.setRole(ERole.ROLE_USER);
         userRepository.save(user);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
+
     public ResponseEntity<?> logoutUser() {
         ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(new MessageResponse("You've been signed out!"));
+    }
+
+    public ResponseEntity<?> checkOTP(CheckOTPDTO checkOTPDTO) {
+        int OTP = otpService.getOtp(checkOTPDTO.getPhone());
+        if (OTP != checkOTPDTO.getOtp()) {
+            throw new UniversalException("Incorrect code", HttpStatus.BAD_REQUEST);
+        }
+        otpService.clearOTP(checkOTPDTO.getPhone());
+        return ResponseEntity.ok(new MessageResponse("successfully code!"));
+    }
+
+    public ResponseEntity<?> distributor(String phone) {
+        String authResponse = null;
+        Optional<User> userOptional = userRepository.findByPhoneAndNotIsDeleted(phone);
+        User user = userOptional.orElseThrow(() -> {
+            throw new UniversalException("User not found %s with phone".formatted(phone), HttpStatus.BAD_REQUEST);
+        });
+        if (user != null) {
+            if (user.getPassword() == null) {
+                messageSender.send(phone);
+                authResponse = EAuthResponse.LOGIN_OTP.toString();
+            } else {
+                authResponse = EAuthResponse.LOGIN_PASSWORD.toString();
+            }
+        } else {
+            messageSender.send(phone);
+            authResponse = EAuthResponse.REGISTER.toString();
+        }
+
+        return ResponseEntity.ok(authResponse);
     }
 }

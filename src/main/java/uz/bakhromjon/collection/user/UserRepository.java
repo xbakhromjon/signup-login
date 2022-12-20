@@ -1,6 +1,7 @@
 package uz.bakhromjon.collection.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -11,9 +12,10 @@ import java.util.Optional;
  **/
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
 
-    Boolean existsByUsername(String username);
+    @Query(nativeQuery = true, value = "select * from users where not is_deleted and phone = :phone")
+    Optional<User> findByPhoneAndNotIsDeleted(String phone);
 
-    Boolean existsByEmail(String email);
+    @Query(nativeQuery = true, value = "select :phone in (select phone from users where not is_deleted)")
+    Boolean existsByPhoneAndNotIsDeleted(String phone);
 }
